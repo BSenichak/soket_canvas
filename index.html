@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Canvas Draw</title>
+  <style>
+    body {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas {
+      border: 1px solid black;
+      display: block;
+      margin: 0 auto;
+      background: white;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="800" height="600"></canvas>
+  <input type="color" id="color">
+  <input type="range" id="size" min="1" max="10">
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js' integrity='sha512-8ExARjWWkIllMlNzVg7JKq9RKWPlJABQUNq6YvAjE/HobctjH/NA+bSiDMDvouBVjp4Wwnf1VP1OEv7Zgjtuxw==' crossorigin='anonymous'></script>
+  <script>
+    const socket = io();
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+    let prevX = 0, prevY = 0;
+    let color = 'black';
+    let size = 2;
+  
+    const colorInput = document.getElementById('color');
+    const sizeInput = document.getElementById('size');
+  
+    colorInput.addEventListener('change', e => {
+      color = e.target.value;
+    });
+  
+    sizeInput.addEventListener('change', e => {
+      size = e.target.value;
+    });
+  
+    canvas.addEventListener('mousedown', e => {
+      drawing = true;
+      prevX = e.offsetX;
+      prevY = e.offsetY;
+    });
+  
+    canvas.addEventListener('mouseup', () => {
+      drawing = false;
+    });
+  
+    canvas.addEventListener('mousemove', e => {
+      if (!drawing) return;
+      const x = e.offsetX;
+      const y = e.offsetY;
+      drawLine(prevX, prevY, x, y, true);
+      prevX = x;
+      prevY = y;
+    });
+  
+    function drawLine(x0, y0, x1, y1, emit) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = size;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+  
+      if (emit) {
+        socket.emit('drawing', { x0, y0, x1, y1, color, size });
+      }
+    }
+  
+    socket.on('drawing', ({ x0, y0, x1, y1, color, size }) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = size;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+    });
+  </script>
+  
+</body>
+</html>
